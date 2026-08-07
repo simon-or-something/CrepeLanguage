@@ -1,5 +1,5 @@
 \ push "hello world" "deez nuts"
-print
-push 5
-push 10
-+
+call print
+push "5"
+push "10"
+call add
