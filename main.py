@@ -2,15 +2,16 @@
 # this language was one approach to making an unsettling language,
 # making a proper AST which balances itself at runtime would also be great
 # but I've done that in a lisp already with an RBTree
-# Oh and, these comments contain very strong language
+# Oh and, these comments contain many deez nurs jokes
 # if this is not to your liking then I advise you to stop here
 # With love, disdain, and indifference,
 # Simon
 
-# done in python because I cannot be fucked to do string processing in C
+# done in python because I cannot be f##ked to do string processing in C
 # but will rewrite in C after exams
 # or make a real compiler
 # anyway I'm a crepe I am a weirdough waffle hell am i doing here i doughnut belong here
+# accordion^sic to some people at least
 
 # so basically everything is global scope, why, because simple language you write in an evening
 # and this prohibits feature creep like in brackish
