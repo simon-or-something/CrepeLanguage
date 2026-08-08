@@ -1,4 +1,11 @@
 # DO NOT take this language serious
+# this language was one approach to making an unsettling language,
+# making a proper AST which balances itself at runtime would also be great
+# but I've done that in a lisp already with an RBTree
+# Oh and, these comments contain very strong language
+# if this is not to your liking then I advise you to stop here
+# With love, disdain, and indifference,
+# Simon
 
 # done in python because I cannot be fucked to do string processing in C
 # but will rewrite in C after exams
@@ -11,18 +18,46 @@
 # .:. this is a testament to the simplicity of crepes
 # this is jit interpreted because crepes can be done one step at a time and skipped about
 
+# ehehehehehehe
+# my comrade defines a specialist as such:
+# someone that knows enough to get themselves into trouble, but not enough to get them back out of trouble again
+# I will let you make that verdict ;)
+try:
+    from typing import Any
+except ImportError: # if the above line fails, try it again
+    from typing import Any
+finally: # and no matter if it fails, do it again. it was so nice we imported it twice
+    from typing import Any
+
 lines = []
 stack = []
 storage = []
 with open("./test.pnck", "r") as f:
     lines = list(map(lambda elem: elem.strip(), f.readlines()))
 
-prog_cnt = 0
+# those are lists because they are actually pointers
+# and global is bad because it pollutes the global namespace
+# "but Simon out of all this code, using global would be sane"
+# shut up voice of reason, that's not the point
+prog_cnt = [0,]
 store_ptr = [0,]
+
+# have something sensible
+STATEMENT = "stmt"
+BUILTIN = "biltin"
+BLTN_ACTUAL = "actual"
+STACK_PUSH = "stkpsh"
+STACK_ARG = "stkarg"
+STACK_POP = "stkpop"
+STORAGE_PUSH = "stopsh"
+STORAGE_ARG = "stoarg"
+STORAGE_POP = "stopop"
+STORAGE_PTR_SET = "sprset"
+STORAGE_PTR_ARG = "sprarg" # sperging out
 
 # this parses the current stack into an AST, which is overkill but some crepes do be like that
 # this is within the mind of the goblin
-def goblin(line: list, idx: int):
+def goblin(line: list, idx: int) -> list[dict[str, Any]]:
     # in the llvm toolchain (specifically clang frontend),
     # there are declarations, statements, and types as base AST nodes
     # here, everything is a statement
@@ -40,54 +75,164 @@ def goblin(line: list, idx: int):
     ### but technically crepes are pancakes
     ### :trollface:
     # now it does resemble AST nodes
+    # "but Simon these arent objects"
+    # look at meta classes wont you
+    # meta mis nueces en tu bocaaaaaaa (put my nuts in your mouth in spanish)
+    # pythons underlying type system is dictionaries, so if you squint this is a list of objects
     match line[0]: # needs check
         ####################### built-in commands
         # looping
         case "goto":
-            return [{"stmt": "biltin", "actual": "j", "relative": line[1] - idx},]
+            return [{STATEMENT: BUILTIN, BLTN_ACTUAL: "j", "relative": line[1] - idx - 1},]
         # functions (are always called with the entire stack)
         case "call":
-            return [{"stmt": "biltin", "actual": "call", "func": line[1], "args": [*stack]},]
+            return [{STATEMENT: BUILTIN, BLTN_ACTUAL: "call", "func": line[1], "args": [*stack]},]
         # conditionals
         case "if":
-            return [{"stmt": "bltin", "actual": "bnez", "cond": stack[-1],
-                    "True": goblin(["goto", line[1]], idx),
-                    "False": goblin(["goto", line[2]], idx)},]
+            return [{STATEMENT: BUILTIN, BLTN_ACTUAL: "bnez", "cond": str(bool(stack[-1])),
+                    str(True): goblin(["goto", line[1]], idx),
+                    str(False): goblin(["goto", line[2]], idx)},]
         ####################### stack opcodes
         # adding to stack
         case "push":
-            return [{"stmt": "stkpsh", "stkarg": line[1]},]
+            return [{STATEMENT: STACK_PUSH, STACK_ARG: line[1]},]
         case "load":
-            return [{"stmt": "stkpsh", "stkarg": storage[store_ptr[0]]}, goblin(["burst",], idx)]
+            # * because goblin returns a list, this unpacks
+            # (unpack deez nuts)
+            return [{STATEMENT: STACK_PUSH, STACK_ARG: storage[store_ptr[0]]}, *goblin(["burst",], idx)]
+        case "copy":
+            return [{STATEMENT: STACK_PUSH, STACK_ARG: stack[-1]}]
         # removing from stack
         case "pop":
-            return [{"stmt": "stkpop"},]
+            return [{STATEMENT: STACK_POP},]
         ####################### storage opcodes
         case "get":
-            return [{"stmt": "stopsh", "stoarg": stack[-1]}, goblin(["pop",], idx)]
+            return [{STATEMENT: STORAGE_PUSH, STORAGE_ARG: stack[-1]}, *goblin(["pop",], idx)]
         case "burst":
-            return [{"stmt": "stopop"},]
+            return [{STATEMENT: STORAGE_POP},]
         ####################### storage pointer opcodes
         case "store":
-            if store_ptr[0] > len(storage):
-                raise GeneratorExit("not a generator")
-            return [{"stmt": "sprset", "sprarg": int(line[1])},]
+            if line[1] > len(storage):
+                raise KeyboardInterrupt("useless error uwu read the code")
+            return [{STATEMENT: STORAGE_PTR_SET, STORAGE_PTR_ARG: line[1]},]
         # storage pointer increase
         case "incr":
-            return [{"stmt": "sprset", "sprarg": store_ptr[0] + 1},]
+            return [{STATEMENT: STORAGE_PTR_SET, STORAGE_PTR_ARG: store_ptr[0] + 1},]
         case "decr":
-            return [{"stmt": "sprset", "sprarg": store_ptr[0] - 1},]
+            return [{STATEMENT: STORAGE_PTR_SET, STORAGE_PTR_ARG: store_ptr[0] - 1},]
         case "last":
-            return [{"stmt": "sprset", "sprarg": len(storage)},]
+            # this is intentional because len storage just means yeah append it broski
+            return [{STATEMENT: STORAGE_PTR_SET, STORAGE_PTR_ARG: len(storage)},]
         case _:
+            # emacs is the best operating system, that unfortunately lacks a text editor
+            # or is it _queue the vsauce music_
             raise OSError("this is an os error. my os (emacs) cannot fathom the bullshittery you put into the code and i will not help you with your code because crepes dont give you feedback")
 
-while prog_cnt < len(lines):
-    operation = lines[prog_cnt]
+def eval_atom(ast: dict):
+    match ast[STATEMENT]:
+        # this makes this horrible to typo check
+        # the fix _would_ be to do `case Class.BUILTIN:` but like...
+        # I know the fix I just wont implement it here as a statement of rebellion
+        # against the corporate slop and influx of meeting bureaucratic correctness
+        # use Haskell yo, this is mathematical correctness
+        # even if your mental health will plummet
+        # work with clang tooling, you will be inspired to take your meds
+        # lol
+        case "biltin":
+            # case stmt with all the builtins
+            match ast[BLTN_ACTUAL]: # notice how its not named the same
+                case "j":
+                    # this may probably error if too many relative calls are stacked
+                    # but this is an exercise left to the programmer _if_ that happens
+                    # ;)
+                    prog_cnt[0] += ast["relative"]
+                case "call":
+                    match ast["func"]:
+                        # oh this is so peak:
+                        # python short circuits, so if an expression is falsy, the second pop wont execute
+                        # hahahahahahahahahahahahahahahahaha
+                        case "write":
+                            print(ast["args"][-1], end="")
+                        case "read":
+                            inpt = input("ξ ")
+                            try:
+                                stack.append(int(inpt))
+                            except ValueError:
+                                # yes this is logic duplication, I know, cry me a river
+                                stack.append(inpt)
+                        case "bee": # rot1 add
+                            # even _if_ stack.pop() wouldnt default to int it would still be turing complete
+                            # n would be a string of length n for example, per concatenation theory this suffices
+                            # it would be a minsky machine or something, which are turing complete
+                            # just... cursed like nothing else
+                            stack.append(stack.pop() + stack.pop())
+                        case "blt": # sub
+                            stack.append(-stack.pop() + stack.pop())
+                        case "melt": # ^sic
+                            stack.append(stack.pop() * stack.pop())
+                        case "admin": # untrue mod so you can make it yourself uwu
+                            first = stack.pop()
+                            stack.append(stack.pop() % first)
+                        case "dividend": # /
+                            stack.append(stack.pop() / stack.pop())
+                        case "strictlylessthan": # gt
+                            stack.append(stack.pop() < stack.pop())
+                        case "panzerwagengti": # gte. never let them know your next move
+                            stack.append(stack.pop() <= stack.pop())
+                        case "notstrictlylessthanandnotstrictlygreaterthan": # eq
+                            stack.append(stack.pop() == stack.pop())
+                        case "strictlylessthanorstrictlygreaterthan": # neq
+                            stack.append(stack.pop() != stack.pop())
+                        case "strictlygreaterthan": # lt
+                            stack.append(stack.pop() > stack.pop())
+                        case "notstrinctlylessthan": # lte
+                            stack.append(stack.pop() >= stack.pop())
+                        case "knot":
+                            stack.append(not stack.pop())
+                        case "and":
+                            stack.append(stack.pop() and stack.pop())
+                        case "or":
+                            stack.append(stack.pop() or stack.pop())
+                        case "shore":
+                            stack.append(stack.pop() ^ stack.pop())
+                        # who needs nxor (xnor) anyway
+                        case _:
+                            raise BufferError("idk bro your buffers off")
+                case "bnez":
+                    for atom in ast[ast["cond"]]:
+                        eval_atom(atom)
+        case "stkpsh":
+            stack.append(ast[STACK_ARG])
+        case "stkpop":
+            stack.pop()
+        case "stopsh":
+            # this is called an in place index write (i dont shift after insertion)
+            # which makes the semantics inconsistent
+            # which is good because now you will suffer when trying to code in this language
+            if store_ptr[0] > len(storage) or store_ptr[0] < 0:
+                raise SystemError("this is illegal")
+            elif store_ptr[0] == len(storage):
+                storage.append(ast[STORAGE_ARG])
+            else:
+                storage[store_ptr[0]] = ast[STORAGE_ARG]
+        case "stopop":
+            storage.pop(store_ptr[0])
+        case "sprset":
+            # i wont check for negative here, being negative sometimes is a-okay!
+            # ;) XD
+            store_ptr[0] = ast[STORAGE_PTR_ARG] # redundant but eat my dick pyright
+        case _:
+            # basically: afaik, in 3.13+ they made the GIL opt out
+            # so this python code wont run in versions earlier than 3.13
+            # skill issue update your python
+            raise PythonFinalizationError("I am 90% sure none of the people that look at this code will have run into this error")
+
+while prog_cnt[0] < len(lines):
+    operation = lines[prog_cnt[0]]
 
     # comments like ligma balls (ligma is a valuable comment)
-    if operation.startswith('\\'):
-        prog_cnt += 1
+    if operation.startswith('\\') or len(operation) == 0:
+        prog_cnt[0] += 1
         continue
 
     # tokenisation like deez nuts (do you know what tokenises? DEEZ NUTS!!!)
@@ -97,36 +242,36 @@ while prog_cnt < len(lines):
     for char in operation:
         if char == '"':
             if was_spch_seen:
-                tokens.append('"' + string + '"')
+                tokens.append(string)
                 string = ""
             was_spch_seen = not was_spch_seen
         elif char == ' ' and not was_spch_seen:
-            tokens.append(string)
+            try:
+                value = int(string)
+                # i know finally exists, but i dont yet know how to explicitly allow a specific error
+                tokens.append(value)
+            except ValueError:
+                value = string
+                tokens.append(value)
+            except Exception:
+                # if there is any other error you deserve to crash
+                raise IsADirectoryError("its called directory, not folder")
             string = ""
         else:
             string += char
+    # "but this doesn't catch the case when the string isnt terminated!!"
+    # have you ever heard a crepe complain?
+    # this language should not be used, let me be horrid
+    # oh and: the last token wont be type cast XDXD
+    # because I am the developer of the language, I say that it is convention to add a null statement to the end
     tokens.append(string)
 
     # parsing like mind goblin (these goblins parse with their minds)
-    #match (
-    ast_subtree = goblin(tokens, prog_cnt)
+    ast_subtree = goblin(tokens, prog_cnt[0])
 
     # evaluation with custom dsl like kenya
     for node in ast_subtree:
-        match node["stmt"]:
-            case "biltin":
-                # case stmt with all the builtins
-                pass
-            case "stkpsh":
-                stack.push(node["stkarg"])
-            case "stkpop":
-                stack.pop()
-            case "stopsh":
-                storage.push(node["stoarg"])
-            case "stopop":
-                storage.pop(store_ptr[0])
-            case "sprset":
-                store_ptr[0] = node["sprarg"]
+        eval_atom(node)
 
-    prog_cnt += 1
+    prog_cnt[0] += 1
 
