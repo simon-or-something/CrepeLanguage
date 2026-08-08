@@ -2,7 +2,7 @@
 # this language was one approach to making an unsettling language,
 # making a proper AST which balances itself at runtime would also be great
 # but I've done that in a lisp already with an RBTree
-# Oh and, these comments contain many deez nurs jokes
+# Oh and, these comments contain many deez nuts jokes
 # if this is not to your liking then I advise you to stop here
 # With love, disdain, and indifference,
 # Simon
@@ -205,7 +205,7 @@ def eval_atom(ast: dict):
                             stack.append(stack.pop() != stack.pop())
                         case "strictlygreaterthan": # lt
                             stack.append(stack.pop() > stack.pop())
-                        case "notstrinctlylessthan": # lte
+                        case "notstrinctlygreaterthan": # lte
                             stack.append(stack.pop() >= stack.pop())
                         case "knot":
                             stack.append(not stack.pop())
@@ -226,7 +226,7 @@ def eval_atom(ast: dict):
         case "stkpop":
             stack.pop()
         case "stopsh":
-            # this is called an in place index write (i dont shift after insertion)
+            # this is called an in place index write (I dont shift after insertion)
             # which makes the semantics inconsistent
             # which is good because now you will suffer when trying to code in this language
             # another possibility is to do `... or store_ptr[0] < -len(storage):` but oh well
@@ -279,10 +279,11 @@ while prog_cnt[0] < len(lines):
     # "but this doesn't catch the case when the string isnt terminated!!"
     # have you ever heard a crepe complain?
     # this language should not be used, let me be horrid
-    # I thought of saying
+    # I thought of saying:
     ### oh and: the last token wont be type cast XDXD
     ### because I am the developer of the language, I say that it is convention to add a null statement to the end
     # but at this point... no. no thank you. this would force me to implement null stmts / ; sentinels
+    # not difficult (just add an extra check) but i want to sleep
     coerce_int(string, tokens)
 
     # parsing like mind goblin (these goblins parse with their minds)
