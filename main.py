@@ -55,6 +55,19 @@ STORAGE_POP = "stopop"
 STORAGE_PTR_SET = "sprset"
 STORAGE_PTR_ARG = "sprarg" # sperging out
 
+def coerce_int(value: str, strg: list):
+    try:
+        strg.append(int(value))
+    except ValueError:
+        try:
+            # it is 4 am set me free please
+            strg.append(float(value))
+        except ValueError:
+            strg.append(value)
+    except Exception:
+        # if there is any other error you deserve to crash
+        raise IsADirectoryError("its called directory, not folder")
+
 # this parses the current stack into an AST, which is overkill but some crepes do be like that
 # this is within the mind of the goblin
 def goblin(line: list, idx: int) -> list[dict[str, Any]]:
@@ -83,6 +96,7 @@ def goblin(line: list, idx: int) -> list[dict[str, Any]]:
         ####################### built-in commands
         # looping
         case "goto":
+            # this doesnt check for oob jumps btw, so good luck XD
             return [{STATEMENT: BUILTIN, BLTN_ACTUAL: "j", "relative": line[1] - idx - 1},]
         # functions (are always called with the entire stack)
         case "call":
@@ -99,6 +113,8 @@ def goblin(line: list, idx: int) -> list[dict[str, Any]]:
         case "load":
             # * because goblin returns a list, this unpacks
             # (unpack deez nuts)
+            if store_ptr[0] < 0:
+                raise FloatingPointError("voy a su pegar y la rayaraya") # or how that brainrot song went
             return [{STATEMENT: STACK_PUSH, STACK_ARG: storage[store_ptr[0]]}, *goblin(["burst",], idx)]
         case "copy":
             return [{STATEMENT: STACK_PUSH, STACK_ARG: stack[-1]}]
@@ -123,10 +139,17 @@ def goblin(line: list, idx: int) -> list[dict[str, Any]]:
         case "last":
             # this is intentional because len storage just means yeah append it broski
             return [{STATEMENT: STORAGE_PTR_SET, STORAGE_PTR_ARG: len(storage)},]
+        case "crlb":
+            return [{STATEMENT: BUILTIN, BLTN_ACTUAL: "call", "func": "write", "args": ['\n',]}]
+        case "dump":
+            ret = []
+            for value in ['\n', stack, '\n', store_ptr, '\n', storage]:
+                ret.append({STATEMENT: BUILTIN, BLTN_ACTUAL: "call", "func": "write", "args": [value]})
+            return ret
         case _:
             # emacs is the best operating system, that unfortunately lacks a text editor
             # or is it _queue the vsauce music_
-            raise OSError("this is an os error. my os (emacs) cannot fathom the bullshittery you put into the code and i will not help you with your code because crepes dont give you feedback")
+            raise OSError("this is an os error. my os (emacs) cannot fathom the tomfoolery you put into the code and i will not help you with your code because crepes dont give you feedback")
 
 def eval_atom(ast: dict):
     match ast[STATEMENT]:
@@ -142,9 +165,7 @@ def eval_atom(ast: dict):
             # case stmt with all the builtins
             match ast[BLTN_ACTUAL]: # notice how its not named the same
                 case "j":
-                    # this may probably error if too many relative calls are stacked
-                    # but this is an exercise left to the programmer _if_ that happens
-                    # ;)
+                    # nevermind that error doesnt happen
                     prog_cnt[0] += ast["relative"]
                 case "call":
                     match ast["func"]:
@@ -154,12 +175,8 @@ def eval_atom(ast: dict):
                         case "write":
                             print(ast["args"][-1], end="")
                         case "read":
-                            inpt = input("ξ ")
-                            try:
-                                stack.append(int(inpt))
-                            except ValueError:
-                                # yes this is logic duplication, I know, cry me a river
-                                stack.append(inpt)
+                            inpt = input("\nξ ")
+                            coerce_int(inpt, stack)
                         case "bee": # rot1 add
                             # even _if_ stack.pop() wouldnt default to int it would still be turing complete
                             # n would be a string of length n for example, per concatenation theory this suffices
@@ -167,14 +184,16 @@ def eval_atom(ast: dict):
                             # just... cursed like nothing else
                             stack.append(stack.pop() + stack.pop())
                         case "blt": # sub
-                            stack.append(-stack.pop() + stack.pop())
+                            stack.append(stack.pop() - stack.pop())
                         case "melt": # ^sic
                             stack.append(stack.pop() * stack.pop())
                         case "admin": # untrue mod so you can make it yourself uwu
-                            first = stack.pop()
-                            stack.append(stack.pop() % first)
+                            stack.append(stack.pop() % stack.pop())
                         case "dividend": # /
                             stack.append(stack.pop() / stack.pop())
+                        # imagine how horrible a language is that flips < and >
+                        # yeah... how horrible that would be
+                        # (deez nuts)
                         case "strictlylessthan": # gt
                             stack.append(stack.pop() < stack.pop())
                         case "panzerwagengti": # gte. never let them know your next move
@@ -209,6 +228,7 @@ def eval_atom(ast: dict):
             # this is called an in place index write (i dont shift after insertion)
             # which makes the semantics inconsistent
             # which is good because now you will suffer when trying to code in this language
+            # another possibility is to do `... or store_ptr[0] < -len(storage):` but oh well
             if store_ptr[0] > len(storage) or store_ptr[0] < 0:
                 raise SystemError("this is illegal")
             elif store_ptr[0] == len(storage):
@@ -216,14 +236,16 @@ def eval_atom(ast: dict):
             else:
                 storage[store_ptr[0]] = ast[STORAGE_ARG]
         case "stopop":
+            if store_ptr[0] < 0:
+                raise ChildProcessError("waa waa pharaoh wants milk")
             storage.pop(store_ptr[0])
         case "sprset":
             # i wont check for negative here, being negative sometimes is a-okay!
             # ;) XD
-            store_ptr[0] = ast[STORAGE_PTR_ARG] # redundant but eat my dick pyright
+            store_ptr[0] = ast[STORAGE_PTR_ARG] # redundant but eat a foot pyright
         case _:
             # basically: afaik, in 3.13+ they made the GIL opt out
-            # so this python code wont run in versions earlier than 3.13
+            # so this python code may not run in versions earlier than 3.13
             # skill issue update your python
             raise PythonFinalizationError("I am 90% sure none of the people that look at this code will have run into this error")
 
@@ -246,25 +268,21 @@ while prog_cnt[0] < len(lines):
                 string = ""
             was_spch_seen = not was_spch_seen
         elif char == ' ' and not was_spch_seen:
-            try:
-                value = int(string)
-                # i know finally exists, but i dont yet know how to explicitly allow a specific error
-                tokens.append(value)
-            except ValueError:
-                value = string
-                tokens.append(value)
-            except Exception:
-                # if there is any other error you deserve to crash
-                raise IsADirectoryError("its called directory, not folder")
+            # double spaces... this would hardly be a good lexer otherwise
+            if len(string) == 0:
+                continue
+            coerce_int(string, tokens)
             string = ""
         else:
             string += char
     # "but this doesn't catch the case when the string isnt terminated!!"
     # have you ever heard a crepe complain?
     # this language should not be used, let me be horrid
-    # oh and: the last token wont be type cast XDXD
-    # because I am the developer of the language, I say that it is convention to add a null statement to the end
-    tokens.append(string)
+    # I thought of saying
+    ### oh and: the last token wont be type cast XDXD
+    ### because I am the developer of the language, I say that it is convention to add a null statement to the end
+    # but at this point... no. no thank you. this would force me to implement null stmts / ; sentinels
+    coerce_int(string, tokens)
 
     # parsing like mind goblin (these goblins parse with their minds)
     ast_subtree = goblin(tokens, prog_cnt[0])

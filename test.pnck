@@ -1,6 +1,17 @@
 \ push "hello world" "deez nuts"
 push "Hello, World!"
-call print
+call write
 \ push "5"
 \ push "10"
 \ call add
+
+\ call read
+\ call write
+
+\ goto 1
+push 1
+if 14 12
+push "fallthrough"
+call write
+push "if stmt"
+call write
